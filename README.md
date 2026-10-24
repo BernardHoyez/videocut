@@ -10,6 +10,6 @@ npx serve .
 
 ## Déploiement GitHub Pages
 
-Publiez le contenu du dossier à la racine d’un dépôt, puis activez GitHub Pages depuis la branche `main`, dossier `/ (root)`.
+Publiez le contenu à la racine du dépôt, puis activez Pages : branche `main`, dossier `/ (root)`.
 
-Pour mettre à jour le cache PWA, incrémentez `CACHE_VERSION` dans `sw.js`.
+Pour invalider le cache PWA, incrémentez `CACHE_VERSION` dans `sw.js`.

@@ -1,65 +1,17 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>videocut — éditeur de cuts vidéo</title>
-  <meta name="theme-color" content="#0f172a" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="css/style.css" />
-</head>
-<body>
-  <header class="app-header"><h1>videocut</h1><p>Éditeur vidéo local — aucun envoi de fichier vers un serveur</p></header>
-  <main>
-    <section id="drop-zone" class="drop-zone">
-      <input type="file" id="video-input" accept="video/*,.mp4,.webm,.mov,.mkv,.m4v,.avi" hidden />
-      <button id="select-button" class="primary">Sélectionner une vidéo</button>
-      <p>ou glissez-déposez un fichier vidéo ici</p>
-      <p class="hint">MP4, WebM, MOV, MKV, AVI… Le traitement reste local.</p>
-    </section>
-    <section id="editor" class="editor hidden">
-      <div class="source-panel">
-        <h2>Rush intégral</h2>
-        <video id="source-video" controls playsinline preload="metadata"></video>
-        <div class="transport">
-          <button id="play-pause">▶ Lecture</button><button id="stop">■ Arrêt</button>
-          <span id="current-time" class="time">00:00.000</span><span class="separator">/</span><span id="duration" class="time">00:00.000</span>
-        </div>
-        <label class="seek-label">Curseur général<input type="range" id="global-seek" min="0" max="1000" value="0" step="1" /></label>
-        <p class="file-info" id="file-info"></p>
-      </div>
-      <div class="cuts-grid">
-        <article class="cut-panel">
-          <h2>Début du cut</h2>
-          <canvas id="start-canvas" width="640" height="360"></canvas>
-          <label class="seek-label">Curseur début<input type="range" id="start-seek" min="0" max="1000" value="0" step="1" /></label>
-          <div class="frame-controls"><button id="start-minus">− 1 image</button><span id="start-time" class="time">00:00.000</span><button id="start-plus">+ 1 image</button></div>
-          <button id="set-start" class="secondary">Définir depuis la position actuelle</button>
-        </article>
-        <article class="cut-panel">
-          <h2>Fin du cut</h2>
-          <canvas id="end-canvas" width="640" height="360"></canvas>
-          <label class="seek-label">Curseur fin<input type="range" id="end-seek" min="0" max="1000" value="0" step="1" /></label>
-          <div class="frame-controls"><button id="end-minus">− 1 image</button><span id="end-time" class="time">00:00.000</span><button id="end-plus">+ 1 image</button></div>
-          <button id="set-end" class="secondary">Définir depuis la position actuelle</button>
-        </article>
-      </div>
-      <section class="preview-panel">
-        <h2>Aperçu du cut</h2>
-        <video id="preview-video" controls playsinline preload="metadata"></video>
-        <div class="preview-actions"><button id="preview-play" class="primary">▶ Lire le cut</button><button id="preview-stop">■ Arrêter</button><span id="cut-duration" class="time">Durée : 00:00.000</span></div>
-      </section>
-      <section class="export-panel">
-        <h2>Export MP4</h2>
-        <button id="export-button" class="primary" disabled>Découper et enregistrer</button>
-        <p id="export-status">Choisissez une vidéo et définissez un début/fin.</p>
-        <progress id="export-progress" value="0" max="1"></progress>
-        <a id="download-link" class="download hidden" download>Télécharger le MP4</a>
-      </section>
-    </section>
-  </main>
-  <footer><p>videocut — traitement vidéo local via FFmpeg.wasm.</p></footer>
-  <script src="js/app.js" type="module"></script>
-</body>
-</html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>videocut</title><meta name="theme-color" content="#0f172a"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-192.png"><link rel="stylesheet" href="css/style.css"></head><body>
+<header class="app-header"><h1>videocut</h1><p>Éditeur vidéo local — aucun envoi de fichier vers un serveur</p></header>
+<main>
+<section id="drop-zone" class="drop-zone"><input type="file" id="video-input" accept="video/*,.mp4,.webm,.mov,.mkv,.m4v,.avi" hidden><button id="select-button" class="primary">Sélectionner une vidéo</button><p>ou glissez-déposez un fichier vidéo ici</p><p class="hint">MP4, WebM, MOV, MKV, AVI… Le traitement reste local.</p></section>
+<section id="editor" class="editor hidden">
+<div class="source-panel"><h2>Rush intégral</h2><video id="source-video" controls playsinline preload="metadata"></video><div class="transport"><button id="play-pause">▶ Lecture</button><button id="stop">■ Arrêt</button><span id="current-time" class="time">00:00.000</span><span class="separator">/</span><span id="duration" class="time">00:00.000</span></div><label class="seek-label">Curseur général<input type="range" id="global-seek" min="0" max="1000" value="0" step="1"></label><p class="file-info" id="file-info"></p></div>
+<div class="cuts-grid">
+<article class="cut-panel"><h2>Début du cut</h2><canvas id="start-canvas" width="640" height="360"></canvas><label class="seek-label">Curseur début<input type="range" id="start-seek" min="0" max="1000" value="0" step="1"></label><div class="frame-controls"><button id="start-minus">− 1 image</button><span id="start-time" class="time">00:00.000</span><button id="start-plus">+ 1 image</button></div><button id="set-start" class="secondary">Définir depuis la position actuelle</button></article>
+<article class="cut-panel"><h2>Fin du cut</h2><canvas id="end-canvas" width="640" height="360"></canvas><label class="seek-label">Curseur fin<input type="range" id="end-seek" min="0" max="1000" value="0" step="1"></label><div class="frame-controls"><button id="end-minus">− 1 image</button><span id="end-time" class="time">00:00.000</span><button id="end-plus">+ 1 image</button></div><button id="set-end" class="secondary">Définir depuis la position actuelle</button></article>
+</div>
+<section class="preview-panel"><h2>Aperçu du cut</h2><video id="preview-video" controls playsinline preload="metadata"></video><div class="preview-actions"><button id="preview-play" class="primary">▶ Lire le cut</button><button id="preview-stop">■ Arrêter</button><span id="cut-duration" class="time">Durée : 00:00.000</span></div></section>
+<section class="export-panel"><h2>Export MP4</h2><button id="export-button" class="primary" disabled>Découper et enregistrer</button><p id="export-status">Choisissez une vidéo et définissez un début/fin.</p><progress id="export-progress" value="0" max="1"></progress><a id="download-link" class="download hidden" download>Télécharger le MP4</a></section>
+</section>
+</main>
+<footer><p>videocut — traitement vidéo local via FFmpeg.wasm.</p></footer>
+<script src="js/app.js" type="module"></script></body></html>
