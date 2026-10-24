@@ -1,4 +1,4 @@
-const CACHE_VERSION = "videocut-v1.0.0";
+const CACHE_VERSION = "videocut-v1.0.1";
 const APP_SHELL = ["./","./index.html","./manifest.webmanifest","./css/style.css","./js/app.js","./js/ffmpeg-worker.js","./icons/icon-192.png","./icons/icon-512.png"];
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(APP_SHELL)));
