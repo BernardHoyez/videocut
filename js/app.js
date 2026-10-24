@@ -346,8 +346,18 @@
     };
 
     try {
+      if (typeof FFmpegWASM === 'undefined' || !FFmpegWASM.FFmpeg) {
+        throw new Error('FFmpegWASM non chargé — rechargez la page (Ctrl+Shift+R)');
+      }
       const { FFmpeg } = FFmpegWASM;
-      const { toBlobURL } = FFmpegUtil;
+
+      // toBlobURL local (évite la dépendance FFmpegUtil)
+      async function toBlobURL(url, mime) {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Impossible de charger ' + url + ' (' + res.status + ')');
+        const buf = await res.arrayBuffer();
+        return URL.createObjectURL(new Blob([buf], { type: mime }));
+      }
 
       ffmpeg = new FFmpeg();
       ffmpeg.on('log', ({ message }) => {
