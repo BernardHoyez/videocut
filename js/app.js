@@ -400,59 +400,108 @@
     isExporting = true;
     btnExport.disabled = true;
     exportProgress.hidden = false;
-    progressBar.style.width = '0%';
+    progressBar.style.width = '5%';
     progressText.textContent = 'Préparation…';
+
+    const inputName = 'input' + getExt(sourceFile.name);
+    const outputName = 'output_cut.mp4';
+    const cutDuration = Math.max(0.1, endTime - startTime);
+    let lastFFmpegLog = '';
 
     try {
       await loadFFmpeg();
 
-      const inputName = 'input' + getExt(sourceFile.name);
-      const outputName = 'output_cut.mp4';
+      // Capturer les logs pour diagnostiquer les erreurs
+      const logHandler = ({ message }) => {
+        lastFFmpegLog = message;
+        if (/error|failed|invalid/i.test(message)) {
+          console.warn('[ffmpeg]', message);
+        }
+      };
+      ffmpeg.on('log', logHandler);
 
-      progressText.textContent = 'Chargement du fichier…';
-      const data = await sourceFile.arrayBuffer();
-      await ffmpeg.writeFile(inputName, new Uint8Array(data));
+      progressBar.style.width = '15%';
+      progressText.textContent = 'Chargement du fichier dans le moteur…';
+      const data = new Uint8Array(await sourceFile.arrayBuffer());
+      await ffmpeg.writeFile(inputName, data);
 
-      progressText.textContent = 'Découpe en cours…';
-      // -ss avant -i = seek rapide ; -to pour durée relative alternative : -t
-      // On utilise -ss start -to end pour précision
-      await ffmpeg.exec([
-        '-ss', String(startTime),
-        '-to', String(endTime),
-        '-i', inputName,
-        '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-crf', '23',
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-movflags', '+faststart',
-        '-y',
-        outputName
-      ]);
+      progressBar.style.width = '30%';
+      progressText.textContent = 'Découpe (copie rapide)…';
+
+      // 1) Essai stream-copy (très rapide, pas de ré-encodage)
+      let ok = false;
+      try {
+        await ffmpeg.exec([
+          '-ss', String(startTime),
+          '-i', inputName,
+          '-t', String(cutDuration),
+          '-c', 'copy',
+          '-avoid_negative_ts', 'make_zero',
+          '-movflags', '+faststart',
+          '-y',
+          outputName
+        ]);
+        // Vérifier que le fichier de sortie n'est pas vide
+        const probe = await ffmpeg.readFile(outputName);
+        if (probe && probe.length > 1000) ok = true;
+        else try { await ffmpeg.deleteFile(outputName); } catch (_) {}
+      } catch (e1) {
+        console.warn('Stream copy failed, fallback re-encode', e1);
+        try { await ffmpeg.deleteFile(outputName); } catch (_) {}
+      }
+
+      // 2) Fallback : ré-encodage H.264 / AAC
+      if (!ok) {
+        progressText.textContent = 'Ré-encodage H.264…';
+        progressBar.style.width = '40%';
+        await ffmpeg.exec([
+          '-ss', String(startTime),
+          '-i', inputName,
+          '-t', String(cutDuration),
+          '-c:v', 'libx264',
+          '-preset', 'ultrafast',
+          '-crf', '28',
+          '-c:a', 'aac',
+          '-b:a', '128k',
+          '-ac', '2',
+          '-movflags', '+faststart',
+          '-y',
+          outputName
+        ]);
+      }
 
       progressText.textContent = 'Finalisation…';
-      progressBar.style.width = '100%';
+      progressBar.style.width = '95%';
 
       const outData = await ffmpeg.readFile(outputName);
-      const blob = new Blob([outData.buffer], { type: 'video/mp4' });
+      if (!outData || outData.length < 1000) {
+        throw new Error('Fichier de sortie vide ou trop petit. ' + (lastFFmpegLog || ''));
+      }
+
+      // outData is Uint8Array — use .buffer carefully (may be SharedArrayBuffer slice)
+      const bytes = outData instanceof Uint8Array ? outData : new Uint8Array(outData);
+      const blob = new Blob([bytes], { type: 'video/mp4' });
       const baseName = sourceFile.name.replace(/\.[^.]+$/, '');
       const outName = `${baseName}_cut.mp4`;
 
       downloadBlob(blob, outName);
+      progressBar.style.width = '100%';
       showToast(`Export terminé : ${outName}`, 'success');
 
-      // Cleanup
       try {
         await ffmpeg.deleteFile(inputName);
         await ffmpeg.deleteFile(outputName);
       } catch (_) {}
     } catch (err) {
-      console.error(err);
-      showToast('Erreur pendant l\'export. Réessayez.', 'error');
+      console.error('Export error:', err);
+      const detail = (err && err.message) ? err.message : String(err);
+      const short = detail.length > 120 ? detail.slice(0, 120) + '…' : detail;
+      showToast('Erreur export : ' + short, 'error');
+      progressText.textContent = 'Échec';
     } finally {
       isExporting = false;
       btnExport.disabled = false;
-      setTimeout(() => { exportProgress.hidden = true; }, 800);
+      setTimeout(() => { exportProgress.hidden = true; }, 1500);
     }
   }
 
