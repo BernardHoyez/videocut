@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="96" fill="#0f172a"/>
+  <rect x="48" y="48" width="416" height="416" rx="64" fill="#1e293b"/>
+  <!-- Film strip -->
+  <rect x="96" y="128" width="320" height="256" rx="24" fill="#38bdf8"/>
+  <rect x="112" y="144" width="288" height="224" rx="16" fill="#0f172a"/>
+  <!-- Scissors / cut mark -->
+  <path d="M180 220 L332 292" stroke="#f1f5f9" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="160" cy="210" r="28" fill="#818cf8"/>
+  <circle cx="352" cy="302" r="28" fill="#818cf8"/>
+  <!-- Play triangle subtle -->
+  <path d="M220 200 L220 312 L310 256 Z" fill="#38bdf8" opacity="0.9"/>
+</svg>
