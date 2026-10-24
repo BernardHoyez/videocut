@@ -1,106 +1,37 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
-  <meta name="description" content="VideoCut – Éditeur vidéo simple pour découper une séquence d'un rush et l'exporter en MP4.">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>VideoCut</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#142033"><meta name="description" content="Découper une séquence vidéo localement dans le navigateur.">
+<link rel="manifest" href="./manifest.json"><link rel="icon" href="./icon-192.png">
+<title>videocut — éditeur vidéo</title><link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <div class="app">
-    <header>
-      <h1>VideoCut</h1>
-      <p class="tagline">Découpez une séquence de votre rush · Export MP4</p>
-    </header>
-
-    <main>
-      <!-- Zone d'upload -->
-      <section id="upload-section" class="card">
-        <div id="drop-zone" class="drop-zone">
-          <div class="drop-icon">🎬</div>
-          <p>Glissez une vidéo ici<br>ou <label for="file-input" class="link">choisissez un fichier</label></p>
-          <p class="hint">MP4, WebM, MOV, MKV…</p>
-          <input type="file" id="file-input" accept="video/*,.mp4,.webm,.mov,.mkv,.avi" hidden>
-        </div>
-      </section>
-
-      <!-- Zone éditeur (cachée au départ) -->
-      <section id="editor-section" class="card hidden">
-        <div class="video-wrapper">
-          <video id="preview" controls playsinline></video>
-        </div>
-
-        <div class="info-row">
-          <span id="file-name">—</span>
-          <span id="duration">00:00</span>
-        </div>
-
-        <!-- Timeline -->
-        <div class="timeline-container">
-          <div class="time-labels">
-            <span id="start-label">00:00.000</span>
-            <span id="end-label">00:00.000</span>
-          </div>
-          <div class="range-slider">
-            <input type="range" id="start-range" min="0" max="1000" value="0" step="1">
-            <input type="range" id="end-range" min="0" max="1000" value="1000" step="1">
-          </div>
-          <div class="time-inputs">
-            <div class="input-group">
-              <label for="start-time">Début</label>
-              <input type="text" id="start-time" value="00:00.000" placeholder="mm:ss.ms">
-            </div>
-            <div class="input-group">
-              <label for="end-time">Fin</label>
-              <input type="text" id="end-time" value="00:00.000" placeholder="mm:ss.ms">
-            </div>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button id="btn-preview-cut" class="btn secondary" disabled>Aperçu du cut</button>
-          <button id="btn-export" class="btn primary" disabled>
-            <span class="btn-text">Exporter MP4</span>
-            <span class="btn-loading hidden">Traitement…</span>
-          </button>
-          <button id="btn-reset" class="btn ghost">Nouveau fichier</button>
-        </div>
-
-        <div id="progress-container" class="progress-container hidden">
-          <div class="progress-bar">
-            <div id="progress-fill" class="progress-fill"></div>
-          </div>
-          <p id="progress-text">0 %</p>
-        </div>
-
-        <div id="status" class="status"></div>
-      </section>
-    </main>
-
-    <footer>
-      <p>Traitement 100 % local · Aucune donnée envoyée</p>
-      <p class="version">v1.0 · PWA</p>
-    </footer>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
-  <script src="app.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('SW registered', reg.scope))
-          .catch(err => console.warn('SW registration failed', err));
-      });
-    }
-  </script>
-</body>
-</html>
+<header><div class="brand">✂ <strong>videocut</strong></div><span>Découpage vidéo local</span></header>
+<main>
+<section class="panel">
+<h1>Découper un rush vidéo</h1>
+<p class="muted">Choisissez une vidéo, définissez le début et la fin, puis exportez le segment sélectionné.</p>
+<label class="drop" id="dropzone" for="fileInput"><span class="dropicon">＋</span><strong>Glissez-déposez une vidéo ici</strong><span>ou cliquez pour sélectionner un fichier</span><small>MP4, WebM, MOV, MKV… selon les formats pris en charge par votre navigateur/FFmpeg</small></label>
+<input id="fileInput" type="file" accept="video/*,.mkv,.mov,.mp4,.webm,.avi,.m4v" hidden>
+<div id="fileInfo" class="fileinfo" hidden></div>
+</section>
+<section class="panel" id="editor" hidden>
+<h2>Aperçu et sélection</h2>
+<video id="video" controls playsinline preload="metadata"></video>
+<div class="timeline"><div class="timehead"><label for="startRange">Début <input id="startText" value="00:00.000" aria-label="Temps de début"></label><label for="endRange">Fin <input id="endText" value="00:00.000" aria-label="Temps de fin"></label><span class="duration">Durée sélectionnée : <b id="selectionDuration">00:00.000</b></span></div>
+<div class="rangegroup"><label for="startRange">Début de la coupe</label><input id="startRange" type="range" min="0" max="1" step="0.01" value="0"></div>
+<div class="rangegroup"><label for="endRange">Fin de la coupe</label><input id="endRange" type="range" min="0" max="1" step="0.01" value="1"></div>
+<div class="actions"><button id="previewBtn" class="secondary">▶ Lire le segment</button><button id="stopPreview" class="secondary">■ Arrêter l’aperçu</button></div>
+</div>
+<div class="exportbox"><h2>Exportation</h2><p class="muted">La vidéo est traitée dans votre navigateur. Rien n’est envoyé à un serveur.</p>
+<label class="check"><input type="checkbox" id="forceEncode"> Forcer le ré-encodage H.264 (plus compatible, plus lent)</label>
+<button id="exportBtn" disabled>Découper et exporter en MP4</button>
+<div id="progressWrap" hidden><div class="progress"><div id="progressBar"></div></div><p id="status" role="status">Préparation…</p><pre id="log" hidden></pre></div>
+<a id="download" hidden class="download">Télécharger le fichier MP4</a>
+</div>
+</section>
+<section class="panel note"><strong>À savoir</strong><ul><li>Le mode « copie » est très rapide et conserve la qualité, mais la coupe peut être ajustée au point d’accès vidéo le plus proche (image clé).</li><li>Si la copie échoue, videocut tente automatiquement un ré-encodage H.264 ultrafast.</li><li>Le premier lancement télécharge FFmpeg.wasm depuis un CDN et nécessite une connexion Internet. Les gros fichiers peuvent demander beaucoup de mémoire.</li></ul></section>
+</main><footer>videocut · PWA · traitement local</footer>
+<script type="module" src="./app.js"></script>
+</body></html>
