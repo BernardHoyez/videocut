@@ -1,26 +1,67 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>videocut — Éditeur de coupe vidéo</title><meta name="theme-color" content="#0f172a"/><link rel="manifest" href="manifest.webmanifest"/><link rel="icon" href="icons/icon.svg" type="image/svg+xml"/><link rel="stylesheet" href="css/style.css?v=2026102402"/></head>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>videocut — Découper une vidéo</title>
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=1">
+</head>
 <body>
-<header class="app-header"><div class="brand"><span class="logo">✂️</span><div><h1>videocut</h1><p>Découpe vidéo locale — aucun envoi vers un serveur</p></div></div><button id="installBtn" class="ghost" hidden>Installer</button></header>
+<header class="header">
+<div><h1>videocut</h1><p class="subtitle">Découpez une séquence vidéo, directement dans votre navigateur.</p></div>
+<button id="install-button" class="button ghost" hidden>Installer l’application</button>
+</header>
 <main>
-<section id="dropZone" class="dropzone" tabindex="0"><input id="fileInput" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-matroska,video/*" hidden/><div class="drop-inner"><div class="drop-icon">🎬</div><h2>Glissez-déposez une vidéo</h2><p>MP4, WebM, MOV, MKV…</p><button id="selectBtn" class="primary">Sélectionner une vidéo</button><p id="fileInfo" class="muted"></p></div></section>
-<section id="editor" class="editor" hidden>
-<div class="video-panel"><video id="video" controls playsinline preload="metadata"></video></div>
-<div class="frame-previews">
-<figure><figcaption>Début du cut</figcaption><canvas id="startFrame" width="640" height="360"></canvas><span id="startFrameTime" class="muted">00:00.000</span></figure>
-<figure><figcaption>Fin du cut</figcaption><canvas id="endFrame" width="640" height="360"></canvas><span id="endFrameTime" class="muted">00:00.000</span></figure>
+<section id="import-screen" class="card import-card">
+<input id="video-input" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-matroska,video/*" hidden>
+<div class="import-content">
+<div class="big-icon">🎬</div>
+<h2>Choisissez une vidéo</h2>
+<p class="muted">Glissez-déposez un fichier ici, ou cliquez sur le bouton.</p>
+<button id="select-video-button" class="button primary">Sélectionner une vidéo</button>
+<p id="selected-file-name" class="muted"></p>
 </div>
-<div class="timeline-panel"><div class="timeline-header"><h3>Chronologie</h3><span id="durationLabel" class="muted">00:00.000</span></div>
-<div id="thumbStrip" class="thumb-strip"><div id="thumbTrack" class="thumb-track"></div><div id="selectionBox" class="selection-box"></div><button id="startHandle" class="handle start" title="Début"></button><button id="endHandle" class="handle end" title="Fin"></button></div>
-<div class="time-fields"><label>Début<input id="startInput" type="text" inputmode="decimal" placeholder="mm:ss.ms"/></label><label>Fin<input id="endInput" type="text" inputmode="decimal" placeholder="mm:ss.ms"/></label><label>Durée<input id="lengthInput" type="text" readonly/></label></div>
-<div class="preview-actions"><button id="previewBtn" class="secondary">▶ Aperçu du cut</button><button id="stopPreviewBtn" class="ghost">■ Arrêter</button></div></div>
-<div class="export-panel"><button id="cutBtn" class="primary">✂️ Découper et exporter en MP4</button><div id="progressWrap" hidden><div class="progress"><div id="progressBar"></div></div><p id="progressText" class="muted">Préparation…</p></div><p id="status" class="status"></p><a id="downloadLink" class="download" hidden>Télécharger la vidéo découpée</a></div>
+</section>
+<section id="editor-screen" class="editor" hidden>
+<div class="card"><h2 class="card-title">Vidéo</h2><video id="video-player" controls playsinline preload="metadata"></video></div>
+<div class="card"><h2 class="card-title">Images du cut</h2>
+<div class="frames">
+<figure><figcaption>Début</figcaption><canvas id="start-frame"></canvas><span id="start-frame-time" class="muted">00:00.000</span></figure>
+<figure><figcaption>Fin</figcaption><canvas id="end-frame"></canvas><span id="end-frame-time" class="muted">00:00.000</span></figure>
+</div></div>
+<div class="card"><h2 class="card-title">Séquence à conserver</h2>
+<div id="timeline" class="timeline"><div id="thumbnails" class="thumbnails"></div><div id="selected-zone" class="selected-zone"></div><button id="start-handle" class="handle start-handle" aria-label="Début du cut"></button><button id="end-handle" class="handle end-handle" aria-label="Fin du cut"></button></div>
+<div class="time-fields">
+<label>Début<input id="start-time" type="text" placeholder="mm:ss.ms"></label>
+<label>Fin<input id="end-time" type="text" placeholder="mm:ss.ms"></label>
+<label>Durée<input id="cut-duration" type="text" readonly></label>
+</div>
+<div class="preview-buttons"><button id="play-selection-button" class="button secondary">▶ Aperçu du cut</button><button id="stop-preview-button" class="button ghost">■ Arrêter</button></div>
+</div>
+<div class="card export-card"><h2 class="card-title">Exporter</h2>
+<button id="export-button" class="button primary">✂️ Découper et enregistrer en MP4</button>
+<div id="progress-area" hidden><div class="progress-bar"><div id="progress-fill"></div></div><p id="progress-label" class="muted">Préparation…</p></div>
+<p id="message" class="message"></p>
+<a id="download-button" class="button success" hidden>⬇ Télécharger le MP4</a>
+</div>
 </section>
 </main>
-<footer><p>videocut fonctionne hors ligne après la première visite. Traitement vidéo local via FFmpeg.wasm.</p></footer>
+<footer class="footer"><p>videocut traite la vidéo localement avec FFmpeg.wasm. Aucun fichier n’est envoyé sur Internet.</p></footer>
 <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
-<script src="js/ffmpeg.js?v=2026102402"></script>
-<script src="js/app.js?v=2026102402"></script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('coi-serviceworker.js').then(()=>navigator.serviceWorker.register('sw.js?v=2026102402')).catch(console.error)})}</script>
-</body></html>
+<script src="js/ffmpeg.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+<script>
+if ("serviceWorker" in navigator) {
+window.addEventListener("load", () => {
+navigator.serviceWorker.register("coi-serviceworker.js")
+.then(() => navigator.serviceWorker.register("sw.js?v=1"))
+.catch(console.error);
+});
+}
+</script>
+</body>
+</html>
