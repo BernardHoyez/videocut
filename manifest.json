@@ -1,32 +1,20 @@
 {
-  "name": "VideoCut",
-  "short_name": "VideoCut",
-  "description": "Éditeur de découpe vidéo — 100 % local dans le navigateur",
+  "name": "videocut - Éditeur Vidéo",
+  "short_name": "videocut",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#0f0f13",
-  "theme_color": "#0f0f13",
-  "lang": "fr",
+  "background_color": "#12131C",
+  "theme_color": "#12131C",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/png"
     }
   ]
 }

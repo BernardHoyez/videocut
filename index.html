@@ -2,168 +2,267 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0f0f13">
-  <meta name="description" content="VideoCut — Découpe rapide de séquences vidéo dans le navigateur">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>VideoCut</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>videocut - Éditeur vidéo PWA</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="css/styles.css">
+  <meta name="theme-color" content="#12131C">
+  <style>
+    :root {
+      --bg: #12131C;
+      --card-bg: #1A1C29;
+      --primary: #4F46E5;
+      --primary-hover: #4338CA;
+      --accent-in: #10B981;
+      --accent-out: #EF4444;
+      --text: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --border: #2D3142;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--card-bg);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { font-size: 1.4rem; font-weight: 700; color: #fff; }
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn:active { transform: scale(0.98); }
+    .btn-secondary { background: #374151; }
+    .btn-secondary:hover { background: #4B5563; }
+    .btn-in { background: var(--accent-in); }
+    .btn-in:hover { background: #059669; }
+    .btn-out { background: var(--accent-out); }
+    .btn-out:hover { background: #DC2626; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    #drop-zone {
+      border: 2px dashed var(--border);
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    #drop-zone.dragover {
+      border-color: var(--primary);
+      background: rgba(79, 70, 229, 0.1);
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .main-player-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+    }
+    video {
+      width: 100%;
+      max-height: 450px;
+      border-radius: 8px;
+      background: #000;
+    }
+
+    .controls-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .time-display {
+      font-family: monospace;
+      font-size: 1.1rem;
+      min-width: 110px;
+      text-align: center;
+    }
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .cut-points-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .cut-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .cut-card.in-card { border-top: 4px solid var(--accent-in); }
+    .cut-card.out-card { border-top: 4px solid var(--accent-out); }
+
+    .cut-card header {
+      background: transparent;
+      padding: 0;
+      border: none;
+    }
+
+    .thumb-preview {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 6px;
+      object-fit: contain;
+    }
+
+    .frame-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .actions-bar {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .hidden { display: none !important; }
+  </style>
 </head>
 <body>
-  <div id="app">
-    <header>
-      <div class="logo">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="4" width="20" height="16" rx="2"/>
-          <path d="M10 9l5 3-5 3V9z"/>
-        </svg>
-        <h1>VideoCut</h1>
-      </div>
-      <div class="header-actions">
-        <button id="btn-new" class="btn btn-ghost" title="Nouveau projet" hidden>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
-      </div>
-    </header>
 
-    <main>
-      <!-- Zone d'import -->
-      <section id="drop-zone" class="drop-zone">
-        <div class="drop-content">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          <h2>Glissez-déposez une vidéo</h2>
-          <p>MP4 · WebM · MOV · MKV · et plus</p>
-          <label class="btn btn-primary">
-            Sélectionner un fichier
-            <input type="file" id="file-input" accept="video/*,.mkv,.mov,.avi,.m4v" hidden>
-          </label>
+  <header>
+    <h1>✂️ videocut</h1>
+    <div style="display:flex; gap:0.5rem;">
+      <button id="pwa-install" class="btn btn-secondary hidden">Installer PWA</button>
+      <button id="btn-export-zip" class="btn btn-secondary">💾 Télécharger ZIP</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="drop-zone">
+      <p>📁 Glissez-déposez une vidéo ici ou cliquez pour choisir un fichier</p>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">(MP4, WebM, MOV, MKV...)</p>
+      <input type="file" id="file-input" accept="video/*" class="hidden">
+    </div>
+
+    <div id="editor-wrapper" class="editor-grid hidden">
+      <!-- Rush intégral -->
+      <section class="main-player-card">
+        <video id="main-video"></video>
+        <div class="controls-bar">
+          <button id="btn-play-pause" class="btn">▶ Lecture</button>
+          <span id="time-main" class="time-display">00:00.00</span>
+          <input type="range" id="seeker-main" min="0" value="0" step="0.01">
+          <span id="duration-main" class="time-display">00:00.00</span>
         </div>
       </section>
 
-      <!-- Éditeur -->
-      <section id="editor" class="editor" hidden>
-        <!-- Lecteur principal (rush) -->
-        <div class="panel panel-rush">
-          <div class="panel-header">
-            <span class="panel-title">Rush intégral</span>
-            <span id="rush-time" class="time-display">00:00.000</span>
+      <!-- Panneaux In & Out -->
+      <section class="cut-points-container">
+        <!-- IMAGE DE DÉBUT (IN) -->
+        <article class="cut-card in-card">
+          <header>
+            <h3>📍 Début du cut (IN)</h3>
+            <span id="time-in" class="time-display">00:00.00</span>
+          </header>
+          <canvas id="canvas-in" class="thumb-preview"></canvas>
+          <input type="range" id="seeker-in" min="0" value="0" step="0.01">
+          <div class="frame-controls">
+            <button id="btn-in-prev" class="btn btn-secondary">-1 Img</button>
+            <button id="btn-set-in" class="btn btn-in">Set IN</button>
+            <button id="btn-in-next" class="btn btn-secondary">+1 Img</button>
           </div>
-          <div class="video-wrap">
-            <video id="video-rush" playsinline></video>
-            <div class="video-overlay" id="rush-overlay">
-              <button id="btn-play-rush" class="btn-play" title="Lecture / Pause">
-                <svg class="icon-play" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                <svg class="icon-pause" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="controls">
-            <button id="btn-stop-rush" class="btn btn-sm" title="Arrêt">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
-            </button>
-            <input type="range" id="rush-seek" min="0" max="1000" value="0" step="1" class="seek-bar">
-            <span id="rush-duration" class="time-display small">00:00.000</span>
-          </div>
-        </div>
+        </article>
 
-        <!-- Points de coupe -->
-        <div class="cut-points">
-          <!-- Début -->
-          <div class="panel panel-cut">
-            <div class="panel-header">
-              <span class="panel-title">Début du cut</span>
-              <span id="start-time" class="time-display accent">00:00.000</span>
-            </div>
-            <div class="frame-preview">
-              <canvas id="canvas-start"></canvas>
-            </div>
-            <div class="frame-controls">
-              <button id="btn-start-minus" class="btn btn-sm" title="-1 image">−1</button>
-              <input type="range" id="start-seek" min="0" max="1000" value="0" step="1" class="seek-bar">
-              <button id="btn-start-plus" class="btn btn-sm" title="+1 image">+1</button>
-            </div>
-            <button id="btn-set-start" class="btn btn-outline btn-block">Utiliser position actuelle</button>
+        <!-- IMAGE DE FIN (OUT) -->
+        <article class="cut-card out-card">
+          <header>
+            <h3>🏁 Fin du cut (OUT)</h3>
+            <span id="time-out" class="time-display">00:00.00</span>
+          </header>
+          <canvas id="canvas-out" class="thumb-preview"></canvas>
+          <input type="range" id="seeker-out" min="0" value="0" step="0.01">
+          <div class="frame-controls">
+            <button id="btn-out-prev" class="btn btn-secondary">-1 Img</button>
+            <button id="btn-set-out" class="btn btn-out">Set OUT</button>
+            <button id="btn-out-next" class="btn btn-secondary">+1 Img</button>
           </div>
+        </article>
+      </section>
 
-          <!-- Fin -->
-          <div class="panel panel-cut">
-            <div class="panel-header">
-              <span class="panel-title">Fin du cut</span>
-              <span id="end-time" class="time-display accent">00:00.000</span>
-            </div>
-            <div class="frame-preview">
-              <canvas id="canvas-end"></canvas>
-            </div>
-            <div class="frame-controls">
-              <button id="btn-end-minus" class="btn btn-sm" title="-1 image">−1</button>
-              <input type="range" id="end-seek" min="0" max="1000" value="1000" step="1" class="seek-bar">
-              <button id="btn-end-plus" class="btn btn-sm" title="+1 image">+1</button>
-            </div>
-            <button id="btn-set-end" class="btn btn-outline btn-block">Utiliser position actuelle</button>
-          </div>
-        </div>
-
-        <!-- Aperçu du cut -->
-        <div class="panel panel-preview">
-          <div class="panel-header">
-            <span class="panel-title">Aperçu du cut</span>
-            <span id="cut-duration" class="time-display">00:00.000</span>
-          </div>
-          <div class="video-wrap">
-            <video id="video-preview" playsinline></video>
-            <div class="video-overlay" id="preview-overlay">
-              <button id="btn-play-preview" class="btn-play" title="Lire le segment">
-                <svg class="icon-play" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                <svg class="icon-pause" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="preview-actions">
-            <button id="btn-export" class="btn btn-primary btn-block" disabled>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Exporter le cut (.mp4)
-            </button>
-            <div id="export-progress" class="progress" hidden>
-              <div class="progress-bar" id="progress-bar"></div>
-              <span id="progress-text">Préparation…</span>
-            </div>
-          </div>
+      <!-- Actions principales -->
+      <section class="actions-bar">
+        <button id="btn-preview-cut" class="btn btn-secondary">👁 Aperçu du cut</button>
+        <button id="btn-save-cut" class="btn btn-in">💾 Sauvegarder le cut (MP4)</button>
+        <div id="progress-bar" class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
         </div>
       </section>
-    </main>
+    </div>
+  </main>
 
-    <footer>
-      <p>VideoCut · Découpe locale · Aucune donnée envoyée</p>
-    </footer>
-  </div>
-
-  <div id="toast" class="toast" hidden></div>
-
-  <script src="js/ffmpeg.min.js"></script>
-  <script src="js/ffmpeg-util.min.js"></script>
-  <script src="js/app.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
-        .then(reg => {
-          reg.update();
-          // Force check for updates periodically
-          setInterval(() => reg.update(), 60 * 60 * 1000);
-        })
-        .catch(err => console.warn('SW registration failed', err));
-    }
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>

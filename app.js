@@ -1,31 +1,262 @@
-const $ = id => document.getElementById(id);
-const fileInput=$('fileInput'), dropzone=$('dropzone'), video=$('video'), editor=$('editor');
-let file=null, duration=0, ffmpeg=null, ffmpegReady=false, currentURL=null, exporting=false;
-const fmt = s => {s=Math.max(0,Number(s)||0);const m=Math.floor(s/60),sec=s%60;return `${String(m).padStart(2,'0')}:${sec.toFixed(3).padStart(6,'0')}`};
-function parseTime(v){const p=v.trim().split(':');if(p.length===1)return Number(p[0]);if(p.length===2)return Number(p[0])*60+Number(p[1]);return NaN}
-function setStatus(t){$('status').textContent=t}
-function setProgress(n){$('progressBar').style.width=Math.max(0,Math.min(100,n))+'%'}
-function getTimes(){return {start:Math.max(0,Math.min(duration,parseTime($('startText').value))),end:Math.max(0,Math.min(duration,parseTime($('endText').value)))}}
-function syncRanges(from){let s=Number($('startRange').value),e=Number($('endRange').value);if(from==='start'&&s>e){e=s;$('endRange').value=e}if(from==='end'&&e<s){s=e;$('startRange').value=s} $('startText').value=fmt(s);$('endText').value=fmt(e);$('selectionDuration').textContent=fmt(e-s);$('exportBtn').disabled=!file||e<=s||exporting}
-function syncText(which){const input=which==='start'?$ ('startText'):$('endText');let v=parseTime(input.value);if(!Number.isFinite(v)){input.value=fmt(Number(which==='start'?$ ('startRange'):$('endRange').value));return}v=Math.max(0,Math.min(duration,v));if(which==='start')$('startRange').value=v;else $('endRange').value=v;syncRanges(which)}
-function loadFile(f){if(!f)return;file=f;if(currentURL)URL.revokeObjectURL(currentURL);currentURL=URL.createObjectURL(f);video.src=currentURL;$('fileInfo').hidden=false;$('fileInfo').textContent=`${f.name} · ${(f.size/1024/1024).toFixed(1)} Mo`;editor.hidden=false;$('download').hidden=true;$('progressWrap').hidden=true;$('exportBtn').disabled=true}
-fileInput.addEventListener('change',e=>loadFile(e.target.files[0]));
-for(const ev of ['dragenter','dragover'])dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add('drag')});
-for(const ev of ['dragleave','drop'])dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove('drag')});
-dropzone.addEventListener('drop',e=>loadFile(e.dataTransfer.files[0]));
-video.addEventListener('loadedmetadata',()=>{duration=video.duration;if(!Number.isFinite(duration)||duration<=0){setStatus('Durée vidéo illisible par le navigateur.');return}for(const id of ['startRange','endRange']){$(id).max=duration} $('startRange').value=0;$('endRange').value=duration;$('startText').value=fmt(0);$('endText').value=fmt(duration);syncRanges();});
-$('startRange').addEventListener('input',()=>syncRanges('start'));$('endRange').addEventListener('input',()=>syncRanges('end'));
-$('startText').addEventListener('change',()=>syncText('start'));$('endText').addEventListener('change',()=>syncText('end'));
-$('previewBtn').addEventListener('click',async()=>{const {start,end}=getTimes();if(!(end>start))return;video.currentTime=start;try{await video.play()}catch{}const stop=()=>{if(video.currentTime>=end){video.pause();video.removeEventListener('timeupdate',stop)}};video.addEventListener('timeupdate',stop)});
-$('stopPreview').addEventListener('click',()=>video.pause());
-async function getFFmpeg(){if(ffmpegReady)return ffmpeg;setStatus('Chargement de FFmpeg.wasm (première utilisation)…');const {FFmpeg}=await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');ffmpeg=new FFmpeg();ffmpeg.on('progress',({progress})=>setProgress(progress*100));ffmpeg.on('log',({message})=>{const l=$('log');l.textContent=(l.textContent+'\n'+message).slice(-5000)});await ffmpeg.load({coreURL:'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',wasmURL:'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm'});ffmpegReady=true;return ffmpeg}
-$('exportBtn').addEventListener('click',async()=>{if(exporting||!file)return;const {start,end}=getTimes();if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start){alert('La fin doit être postérieure au début.');return}
-exporting=true;$('exportBtn').disabled=true;$('progressWrap').hidden=false;$('download').hidden=true;$('log').textContent='';setProgress(0);
-try{const f=await getFFmpeg();setStatus('Chargement du rush dans FFmpeg…');const ext=(file.name.split('.').pop()||'mp4').toLowerCase().replace(/[^a-z0-9]/g,'');const inName='input.'+ext,outName='videocut_output.mp4';await f.writeFile(inName,new Uint8Array(await file.arrayBuffer()));
-const common=['-ss',start.toFixed(3),'-i',inName,'-t',(end-start).toFixed(3),'-map','0:v:0?','-map','0:a:0?','-avoid_negative_ts','make_zero'];
-let ok=false;if(!$('forceEncode').checked){setStatus('Tentative de découpage rapide sans ré-encodage…');try{await f.exec([...common,'-c','copy','-movflags','+faststart',outName]);const data=await f.readFile(outName);if(data.length>1000)ok=true;else throw Error('Fichier de sortie vide');}catch(e){$('log').textContent+='\\nCopie directe impossible : '+e.message;try{await f.deleteFile(outName)}catch{}}}
-if(!ok){setStatus('Ré-encodage H.264 ultrafast…');try{await f.deleteFile(outName)}catch{}await f.exec([...common,'-c:v','libx264','-preset','ultrafast','-crf','23','-c:a','aac','-b:a','128k','-movflags','+faststart',outName]);}
-setStatus('Préparation du téléchargement…');const data=await f.readFile(outName);const blob=new Blob([data],{type:'video/mp4'});const url=URL.createObjectURL(blob);const a=$('download');a.href=url;const stem=file.name.replace(/\.[^.]+$/,'');a.download=stem+'_cut.mp4';a.textContent=`Télécharger ${a.download} · ${(blob.size/1024/1024).toFixed(1)} Mo`;a.hidden=false;setProgress(100);setStatus('Terminé. Le fichier est prêt à être téléchargé.');try{await f.deleteFile(inName);await f.deleteFile(outName)}catch{}
-}catch(err){console.error(err);setStatus('Échec du traitement : '+(err?.message||err));alert('Le découpage a échoué. Vérifiez la connexion, le format du fichier et la mémoire disponible. Détail : '+(err?.message||err))}finally{exporting=false;$('exportBtn').disabled=getTimes().end<=getTimes().start||!file}
+// Frame duration approximation (~25 FPS)
+const FRAME_TIME = 0.04;
+
+// DOM Elements
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const editorWrapper = document.getElementById('editor-wrapper');
+
+const mainVideo = document.getElementById('main-video');
+const btnPlayPause = document.getElementById('btn-play-pause');
+const timeMain = document.getElementById('time-main');
+const durationMain = document.getElementById('duration-main');
+const seekerMain = document.getElementById('seeker-main');
+
+const timeIn = document.getElementById('time-in');
+const timeOut = document.getElementById('time-out');
+const seekerIn = document.getElementById('seeker-in');
+const seekerOut = document.getElementById('seeker-out');
+const canvasIn = document.getElementById('canvas-in');
+const canvasOut = document.getElementById('canvas-out');
+
+const btnInPrev = document.getElementById('btn-in-prev');
+const btnInNext = document.getElementById('btn-in-next');
+const btnSetIn = document.getElementById('btn-set-in');
+
+const btnOutPrev = document.getElementById('btn-out-prev');
+const btnOutNext = document.getElementById('btn-out-next');
+const btnSetOut = document.getElementById('btn-set-out');
+
+const btnPreviewCut = document.getElementById('btn-preview-cut');
+const btnSaveCut = document.getElementById('btn-save-cut');
+const progressBar = document.getElementById('progress-bar');
+const progressFill = document.getElementById('progress-fill');
+
+// State
+let videoFile = null;
+let originalFileName = 'video';
+let cutInTime = 0;
+let cutOutTime = 0;
+let isPreviewingCut = false;
+
+// Format mm:ss.ms
+function formatTime(seconds) {
+  if (isNaN(seconds)) return '00:00.00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds % 1) * 100);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+}
+
+// Drag & Drop
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
 });
-if('serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./brise-caches.js').catch(console.warn));
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) loadVideo(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) loadVideo(e.target.files[0]);
+});
+
+function loadVideo(file) {
+  videoFile = file;
+  originalFileName = file.name.replace(/\.[^/.]+$/, "");
+  const url = URL.createObjectURL(file);
+  mainVideo.src = url;
+  editorWrapper.classList.remove('hidden');
+  dropZone.classList.add('hidden');
+}
+
+mainVideo.addEventListener('loadedmetadata', () => {
+  const duration = mainVideo.duration;
+  seekerMain.max = duration;
+  seekerIn.max = duration;
+  seekerOut.max = duration;
+  
+  durationMain.textContent = formatTime(duration);
+  
+  cutInTime = 0;
+  cutOutTime = duration;
+  
+  seekerIn.value = cutInTime;
+  seekerOut.value = cutOutTime;
+  
+  updateInPreview();
+  updateOutPreview();
+});
+
+// Update video timeline
+mainVideo.addEventListener('timeupdate', () => {
+  if (!isPreviewingCut) {
+    seekerMain.value = mainVideo.currentTime;
+    timeMain.textContent = formatTime(mainVideo.currentTime);
+  } else {
+    seekerMain.value = mainVideo.currentTime;
+    timeMain.textContent = formatTime(mainVideo.currentTime);
+    if (mainVideo.currentTime >= cutOutTime) {
+      mainVideo.pause();
+      isPreviewingCut = false;
+      btnPlayPause.textContent = '▶ Lecture';
+    }
+  }
+});
+
+seekerMain.addEventListener('input', () => {
+  mainVideo.currentTime = parseFloat(seekerMain.value);
+});
+
+btnPlayPause.addEventListener('click', () => {
+  isPreviewingCut = false;
+  if (mainVideo.paused) {
+    mainVideo.play();
+    btnPlayPause.textContent = '⏸ Pause';
+  } else {
+    mainVideo.pause();
+    btnPlayPause.textContent = '▶ Lecture';
+  }
+});
+
+// Helper for canvas frame rendering
+function renderFrameToCanvas(time, canvas) {
+  const tempVid = document.createElement('video');
+  tempVid.src = mainVideo.src;
+  tempVid.currentTime = time;
+  tempVid.addEventListener('seeked', () => {
+    canvas.width = tempVid.videoWidth || 640;
+    canvas.height = tempVid.videoHeight || 360;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(tempVid, 0, 0, canvas.width, canvas.height);
+  }, { once: true });
+}
+
+function updateInPreview() {
+  timeIn.textContent = formatTime(cutInTime);
+  seekerIn.value = cutInTime;
+  renderFrameToCanvas(cutInTime, canvasIn);
+}
+
+function updateOutPreview() {
+  timeOut.textContent = formatTime(cutOutTime);
+  seekerOut.value = cutOutTime;
+  renderFrameToCanvas(cutOutTime, canvasOut);
+}
+
+// IN Controls
+seekerIn.addEventListener('input', () => {
+  cutInTime = Math.min(parseFloat(seekerIn.value), cutOutTime - 0.1);
+  updateInPreview();
+});
+btnSetIn.addEventListener('click', () => {
+  cutInTime = Math.min(mainVideo.currentTime, cutOutTime - 0.1);
+  updateInPreview();
+});
+btnInPrev.addEventListener('click', () => {
+  cutInTime = Math.max(0, cutInTime - FRAME_TIME);
+  updateInPreview();
+});
+btnInNext.addEventListener('click', () => {
+  cutInTime = Math.min(mainVideo.duration, cutInTime + FRAME_TIME, cutOutTime - 0.1);
+  updateInPreview();
+});
+
+// OUT Controls
+seekerOut.addEventListener('input', () => {
+  cutOutTime = Math.max(parseFloat(seekerOut.value), cutInTime + 0.1);
+  updateOutPreview();
+});
+btnSetOut.addEventListener('click', () => {
+  cutOutTime = Math.max(mainVideo.currentTime, cutInTime + 0.1);
+  updateOutPreview();
+});
+btnOutPrev.addEventListener('click', () => {
+  cutOutTime = Math.max(0, cutOutTime - FRAME_TIME, cutInTime + 0.1);
+  updateOutPreview();
+});
+btnOutNext.addEventListener('click', () => {
+  cutOutTime = Math.min(mainVideo.duration, cutOutTime + FRAME_TIME);
+  updateOutPreview();
+});
+
+// Preview cut
+btnPreviewCut.addEventListener('click', () => {
+  isPreviewingCut = true;
+  mainVideo.currentTime = cutInTime;
+  mainVideo.play();
+  btnPlayPause.textContent = '⏸ Pause';
+});
+
+// Export cut using Canvas and MediaRecorder
+btnSaveCut.addEventListener('click', async () => {
+  if (cutOutTime <= cutInTime) return;
+  
+  btnSaveCut.disabled = true;
+  progressBar.style.display = 'block';
+  progressFill.style.width = '0%';
+  
+  const exportVid = document.createElement('video');
+  exportVid.src = mainVideo.src;
+  await new Promise(r => exportVid.onloadedmetadata = r);
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = exportVid.videoWidth;
+  canvas.height = exportVid.videoHeight;
+  const ctx = canvas.getContext('2d');
+  
+  const stream = canvas.captureStream(30);
+  let mimeType = 'video/mp4;codecs=avc1';
+  if (!MediaRecorder.isTypeSupported(mimeType)) {
+    mimeType = 'video/webm;codecs=vp9';
+  }
+  
+  const recorder = new MediaRecorder(stream, { mimeType });
+  const chunks = [];
+  recorder.ondataavailable = e => chunks.push(e.data);
+  
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: mimeType });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${originalFileName}_cut.mp4`;
+    a.click();
+    
+    btnSaveCut.disabled = false;
+    progressBar.style.display = 'none';
+  };
+  
+  recorder.start();
+  
+  exportVid.currentTime = cutInTime;
+  await new Promise(r => exportVid.onseeked = r);
+  
+  const duration = cutOutTime - cutInTime;
+  const startTime = performance.now();
+  
+  function processFrame() {
+    if (exportVid.currentTime >= cutOutTime || exportVid.ended) {
+      recorder.stop();
+      return;
+    }
+    
+    ctx.drawImage(exportVid, 0, 0);
+    const elapsed = (exportVid.currentTime - cutInTime);
+    progressFill.style.width = `${Math.min(100, (elapsed / duration) * 100)}%`;
+    
+    exportVid.currentTime = Math.min(cutOutTime, exportVid.currentTime + 0.033);
+    exportVid.onseeked = () => requestAnimationFrame(processFrame);
+  }
+  
+  processFrame();
+});
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    console.log('Service Worker Enregistré');
+  });
+}
