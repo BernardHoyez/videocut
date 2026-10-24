@@ -1,6 +1,6 @@
 # videocut ✂️
 
-PWA d'édition et de découpe de séquences vidéo directement dans le navigateur client-side.
+PWA d'édition et de découpe de séquences vidéo directement dans le navigateur client-side avec rendu fluide.
 
 ## Déploiement GitHub Pages
 1. Décompressez l'archive ZIP.
@@ -13,5 +13,5 @@ PWA d'édition et de découpe de séquences vidéo directement dans le navigateu
 - Découpe millimétrée (+1 / -1 image).
 - Prévisualisations temps réel des images de début (IN) et de fin (OUT).
 - Aperçu en lecture restreinte du cut.
-- Export MP4 (`*_cut.mp4`).
+- Exportation fluide à 30 IPS et débit 5 Mbps (`*_cut.mp4`).
 - PWA autonome avec Service Worker brise-cache.

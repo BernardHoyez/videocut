@@ -191,67 +191,93 @@ btnPreviewCut.addEventListener('click', () => {
   btnPlayPause.textContent = '⏸ Pause';
 });
 
-// Export cut using Canvas and MediaRecorder
+// Smooth Real-time Video Stream Capture & Export
 btnSaveCut.addEventListener('click', async () => {
   if (cutOutTime <= cutInTime) return;
   
   btnSaveCut.disabled = true;
+  btnPreviewCut.disabled = true;
   progressBar.style.display = 'block';
   progressFill.style.width = '0%';
-  
+
+  mainVideo.pause();
+
   const exportVid = document.createElement('video');
   exportVid.src = mainVideo.src;
-  await new Promise(r => exportVid.onloadedmetadata = r);
+  exportVid.muted = false;
+  exportVid.volume = 1.0;
   
+  await new Promise(r => {
+    exportVid.onloadedmetadata = r;
+    exportVid.load();
+  });
+
   const canvas = document.createElement('canvas');
-  canvas.width = exportVid.videoWidth;
-  canvas.height = exportVid.videoHeight;
+  canvas.width = exportVid.videoWidth || 1280;
+  canvas.height = exportVid.videoHeight || 720;
   const ctx = canvas.getContext('2d');
-  
-  const stream = canvas.captureStream(30);
+
+  // Web Audio setup to route audio smoothly into stream
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const source = audioCtx.createMediaElementSource(exportVid);
+  const dest = audioCtx.createMediaStreamDestination();
+  source.connect(dest);
+
+  const canvasStream = canvas.captureStream(30);
+  const combinedStream = new MediaStream([
+    ...canvasStream.getVideoTracks(),
+    ...dest.stream.getAudioTracks()
+  ]);
+
   let mimeType = 'video/mp4;codecs=avc1';
   if (!MediaRecorder.isTypeSupported(mimeType)) {
     mimeType = 'video/webm;codecs=vp9';
   }
-  
-  const recorder = new MediaRecorder(stream, { mimeType });
+
+  const recorder = new MediaRecorder(combinedStream, {
+    mimeType,
+    videoBitsPerSecond: 5000000
+  });
+
   const chunks = [];
-  recorder.ondataavailable = e => chunks.push(e.data);
-  
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
   recorder.onstop = () => {
     const blob = new Blob(chunks, { type: mimeType });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `${originalFileName}_cut.mp4`;
     a.click();
-    
+
+    audioCtx.close();
     btnSaveCut.disabled = false;
+    btnPreviewCut.disabled = false;
     progressBar.style.display = 'none';
   };
-  
-  recorder.start();
-  
+
   exportVid.currentTime = cutInTime;
   await new Promise(r => exportVid.onseeked = r);
-  
+
+  recorder.start();
+  exportVid.play();
+
   const duration = cutOutTime - cutInTime;
-  const startTime = performance.now();
-  
-  function processFrame() {
+
+  function renderLoop() {
     if (exportVid.currentTime >= cutOutTime || exportVid.ended) {
-      recorder.stop();
+      exportVid.pause();
+      if (recorder.state !== 'inactive') recorder.stop();
       return;
     }
-    
-    ctx.drawImage(exportVid, 0, 0);
-    const elapsed = (exportVid.currentTime - cutInTime);
-    progressFill.style.width = `${Math.min(100, (elapsed / duration) * 100)}%`;
-    
-    exportVid.currentTime = Math.min(cutOutTime, exportVid.currentTime + 0.033);
-    exportVid.onseeked = () => requestAnimationFrame(processFrame);
+
+    ctx.drawImage(exportVid, 0, 0, canvas.width, canvas.height);
+    const progress = ((exportVid.currentTime - cutInTime) / duration) * 100;
+    progressFill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+
+    requestAnimationFrame(renderLoop);
   }
-  
-  processFrame();
+
+  renderLoop();
 });
 
 // Register Service Worker
