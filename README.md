@@ -9,7 +9,8 @@
 ## Fonctionnement
 - Import par sélection ou glisser-déposer.
 - Début/fin réglables par curseurs ou saisie `mm:ss.ms` (ex. `01:23.450`).
-- Aperçu de la séquence sélectionnée.
+- Aperçu de la séquence sélectionnée : déplacer un curseur affiche immédiatement l'image au point de coupe.
+- Réglage fin du début et de la fin par pas d'une image (estimée à 1/30 s) ou de 0,1 s.
 - Export MP4 : essai `-c copy`, puis H.264 ultrafast en cas d'échec.
 - Fichiers traités dans le navigateur ; FFmpeg.wasm et son cœur sont chargés depuis jsDelivr lors du premier export.
 

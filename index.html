@@ -21,7 +21,10 @@
 <video id="video" controls playsinline preload="metadata"></video>
 <div class="timeline"><div class="timehead"><label for="startRange">Début <input id="startText" value="00:00.000" aria-label="Temps de début"></label><label for="endRange">Fin <input id="endText" value="00:00.000" aria-label="Temps de fin"></label><span class="duration">Durée sélectionnée : <b id="selectionDuration">00:00.000</b></span></div>
 <div class="rangegroup"><label for="startRange">Début de la coupe</label><input id="startRange" type="range" min="0" max="1" step="0.01" value="0"></div>
+<div class="precision"><span>Affiner le début</span><button type="button" class="secondary nudge" data-target="start" data-delta="-1">− 1 image</button><button type="button" class="secondary nudge" data-target="start" data-delta="1">+ 1 image</button><button type="button" class="secondary nudge" data-target="start" data-delta="-0.1">− 0,1 s</button><button type="button" class="secondary nudge" data-target="start" data-delta="0.1">+ 0,1 s</button></div>
 <div class="rangegroup"><label for="endRange">Fin de la coupe</label><input id="endRange" type="range" min="0" max="1" step="0.01" value="1"></div>
+<div class="precision"><span>Affiner la fin</span><button type="button" class="secondary nudge" data-target="end" data-delta="-1">− 1 image</button><button type="button" class="secondary nudge" data-target="end" data-delta="1">+ 1 image</button><button type="button" class="secondary nudge" data-target="end" data-delta="-0.1">− 0,1 s</button><button type="button" class="secondary nudge" data-target="end" data-delta="0.1">+ 0,1 s</button></div>
+<div class="hint" id="seekHint">Déplacez un curseur pour afficher immédiatement l’image correspondante. Les boutons « 1 image » affinent le réglage.</div>
 <div class="actions"><button id="previewBtn" class="secondary">▶ Lire le segment</button><button id="stopPreview" class="secondary">■ Arrêter l’aperçu</button></div>
 </div>
 <div class="exportbox"><h2>Exportation</h2><p class="muted">La vidéo est traitée dans votre navigateur. Rien n’est envoyé à un serveur.</p>
