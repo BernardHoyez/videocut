@@ -1,82 +1,26 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>videocut — Éditeur de coupe vidéo</title>
-  <meta name="description" content="Découpez une séquence d’une vidéo localement dans votre navigateur." />
-  <meta name="theme-color" content="#0f172a" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icons/icon.svg" />
-  <link rel="stylesheet" href="css/style.css?v=2026102401" />
-</head>
+<html lang="fr"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>videocut — Éditeur de coupe vidéo</title><meta name="theme-color" content="#0f172a"/><link rel="manifest" href="manifest.webmanifest"/><link rel="icon" href="icons/icon.svg" type="image/svg+xml"/><link rel="stylesheet" href="css/style.css?v=2026102402"/></head>
 <body>
-  <header class="app-header">
-    <div class="brand">
-      <span class="logo">✂️</span>
-      <div>
-        <h1>videocut</h1>
-        <p>Découpe vidéo locale — aucun envoi vers un serveur</p>
-      </div>
-    </div>
-    <button id="installBtn" class="ghost" hidden>Installer</button>
-  </header>
-  <main>
-    <section id="dropZone" class="dropzone" tabindex="0">
-      <input id="fileInput" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-matroska,video/*" hidden />
-      <div class="drop-inner">
-        <div class="drop-icon">🎬</div>
-        <h2>Glissez-déposez une vidéo</h2>
-        <p>MP4, WebM, MOV, MKV…</p>
-        <button id="selectBtn" class="primary">Sélectionner une vidéo</button>
-        <p id="fileInfo" class="muted"></p>
-      </div>
-    </section>
-    <section id="editor" class="editor" hidden>
-      <div class="video-panel"><video id="video" controls playsinline preload="metadata"></video></div>
-      <div class="timeline-panel">
-        <div class="timeline-header"><h3>Chronologie</h3><span id="durationLabel" class="muted">00:00.000</span></div>
-        <div id="thumbStrip" class="thumb-strip">
-          <div id="thumbTrack" class="thumb-track"></div>
-          <div id="selectionBox" class="selection-box"></div>
-          <button id="startHandle" class="handle start" title="Début"></button>
-          <button id="endHandle" class="handle end" title="Fin"></button>
-        </div>
-        <div class="time-fields">
-          <label>Début<input id="startInput" type="text" inputmode="decimal" placeholder="mm:ss.ms" /></label>
-          <label>Fin<input id="endInput" type="text" inputmode="decimal" placeholder="mm:ss.ms" /></label>
-          <label>Durée<input id="lengthInput" type="text" readonly /></label>
-        </div>
-        <div class="preview-actions">
-          <button id="previewBtn" class="secondary">▶ Aperçu du cut</button>
-          <button id="stopPreviewBtn" class="ghost">■ Arrêter</button>
-        </div>
-      </div>
-      <div class="export-panel">
-        <button id="cutBtn" class="primary">✂️ Découper et exporter en MP4</button>
-        <div id="progressWrap" hidden>
-          <div class="progress"><div id="progressBar"></div></div>
-          <p id="progressText" class="muted">Préparation…</p>
-        </div>
-        <p id="status" class="status"></p>
-        <a id="downloadLink" class="download" hidden>Télécharger la vidéo découpée</a>
-      </div>
-    </section>
-  </main>
-  <footer><p>videocut fonctionne hors ligne après la première visite. Le traitement vidéo est exécuté par FFmpeg.wasm dans votre navigateur.</p></footer>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
-  <script src="js/ffmpeg.js?v=2026102401"></script>
-  <script src="js/app.js?v=2026102401"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('coi-serviceworker.js')
-          .then(() => navigator.serviceWorker.register('sw.js?v=2026102401'))
-          .catch(console.error);
-      });
-    }
-  </script>
-</body>
-</html>
+<header class="app-header"><div class="brand"><span class="logo">✂️</span><div><h1>videocut</h1><p>Découpe vidéo locale — aucun envoi vers un serveur</p></div></div><button id="installBtn" class="ghost" hidden>Installer</button></header>
+<main>
+<section id="dropZone" class="dropzone" tabindex="0"><input id="fileInput" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-matroska,video/*" hidden/><div class="drop-inner"><div class="drop-icon">🎬</div><h2>Glissez-déposez une vidéo</h2><p>MP4, WebM, MOV, MKV…</p><button id="selectBtn" class="primary">Sélectionner une vidéo</button><p id="fileInfo" class="muted"></p></div></section>
+<section id="editor" class="editor" hidden>
+<div class="video-panel"><video id="video" controls playsinline preload="metadata"></video></div>
+<div class="frame-previews">
+<figure><figcaption>Début du cut</figcaption><canvas id="startFrame" width="640" height="360"></canvas><span id="startFrameTime" class="muted">00:00.000</span></figure>
+<figure><figcaption>Fin du cut</figcaption><canvas id="endFrame" width="640" height="360"></canvas><span id="endFrameTime" class="muted">00:00.000</span></figure>
+</div>
+<div class="timeline-panel"><div class="timeline-header"><h3>Chronologie</h3><span id="durationLabel" class="muted">00:00.000</span></div>
+<div id="thumbStrip" class="thumb-strip"><div id="thumbTrack" class="thumb-track"></div><div id="selectionBox" class="selection-box"></div><button id="startHandle" class="handle start" title="Début"></button><button id="endHandle" class="handle end" title="Fin"></button></div>
+<div class="time-fields"><label>Début<input id="startInput" type="text" inputmode="decimal" placeholder="mm:ss.ms"/></label><label>Fin<input id="endInput" type="text" inputmode="decimal" placeholder="mm:ss.ms"/></label><label>Durée<input id="lengthInput" type="text" readonly/></label></div>
+<div class="preview-actions"><button id="previewBtn" class="secondary">▶ Aperçu du cut</button><button id="stopPreviewBtn" class="ghost">■ Arrêter</button></div></div>
+<div class="export-panel"><button id="cutBtn" class="primary">✂️ Découper et exporter en MP4</button><div id="progressWrap" hidden><div class="progress"><div id="progressBar"></div></div><p id="progressText" class="muted">Préparation…</p></div><p id="status" class="status"></p><a id="downloadLink" class="download" hidden>Télécharger la vidéo découpée</a></div>
+</section>
+</main>
+<footer><p>videocut fonctionne hors ligne après la première visite. Traitement vidéo local via FFmpeg.wasm.</p></footer>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+<script src="js/ffmpeg.js?v=2026102402"></script>
+<script src="js/app.js?v=2026102402"></script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('coi-serviceworker.js').then(()=>navigator.serviceWorker.register('sw.js?v=2026102402')).catch(console.error)})}</script>
+</body></html>
