@@ -11,10 +11,12 @@ const STATIC_ASSETS = [
   './css/styles.css',
   './js/app.js',
   './js/ffmpeg.min.js',
+  './js/ffmpeg-util.min.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png'
+  // ffmpeg-core.wasm (~30 Mo) : mis en cache au premier export, pas au install
 ];
 
 // Installation : pré-cache les assets de base

@@ -107,8 +107,9 @@
       btnNew.hidden = false;
       btnExport.disabled = false;
       showToast(`Vidéo chargée : ${file.name}`);
-      // Essayer d'estimer le FPS via requestVideoFrameCallback si dispo
       estimateFps();
+      // Préchargement du moteur en arrière-plan (export plus rapide)
+      loadFFmpeg().catch(() => {});
     };
 
     videoRush.onerror = () => {
@@ -322,20 +323,35 @@
   // ---------- FFmpeg export ----------
   async function loadFFmpeg() {
     if (ffmpegLoaded) return ffmpeg;
+
     const overlay = document.createElement('div');
     overlay.className = 'loading-ffmpeg';
     overlay.innerHTML = `
       <div class="spinner"></div>
-      <p style="color:var(--text-muted)">Chargement du moteur vidéo…</p>
+      <p id="ffmpeg-load-msg" style="color:var(--text-muted);max-width:280px;text-align:center">
+        Chargement du moteur vidéo…<br>
+        <small style="opacity:0.7">~30 Mo — une seule fois</small>
+      </p>
+      <div style="width:220px;height:6px;background:var(--border);border-radius:3px;margin-top:8px;overflow:hidden">
+        <div id="ffmpeg-load-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.3s"></div>
+      </div>
     `;
     document.body.appendChild(overlay);
+    const msgEl = overlay.querySelector('#ffmpeg-load-msg');
+    const barEl = overlay.querySelector('#ffmpeg-load-bar');
+
+    const setProgress = (pct, text) => {
+      barEl.style.width = Math.min(100, pct) + '%';
+      if (text) msgEl.innerHTML = text;
+    };
 
     try {
-      // FFmpeg.wasm v0.12+ API (UMD global FFmpeg)
       const { FFmpeg } = FFmpegWASM;
+      const { toBlobURL } = FFmpegUtil;
+
       ffmpeg = new FFmpeg();
       ffmpeg.on('log', ({ message }) => {
-        // console.log(message);
+        // console.log('[ffmpeg]', message);
       });
       ffmpeg.on('progress', ({ progress }) => {
         const pct = Math.min(99, Math.round(progress * 100));
@@ -343,15 +359,31 @@
         progressText.textContent = `Encodage… ${pct}%`;
       });
 
-      await ffmpeg.load({
-        coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
-        wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
-      });
+      // Chemins locaux (même origine) — évite les blocages CDN
+      const base = new URL('js/ffmpeg-core/', window.location.href).href;
+
+      setProgress(10, 'Téléchargement du moteur…<br><small style="opacity:0.7">ffmpeg-core.js</small>');
+      const coreURL = await toBlobURL(base + 'ffmpeg-core.js', 'text/javascript');
+      setProgress(40, 'Téléchargement du moteur…<br><small style="opacity:0.7">ffmpeg-core.wasm (~30 Mo)</small>');
+      const wasmURL = await toBlobURL(base + 'ffmpeg-core.wasm', 'application/wasm');
+      setProgress(75, 'Initialisation du moteur…');
+
+      // Timeout de sécurité (90 s)
+      const loadPromise = ffmpeg.load({ coreURL, wasmURL });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout : chargement > 90 s')), 90000)
+      );
+      await Promise.race([loadPromise, timeout]);
+
+      setProgress(100, 'Moteur prêt');
       ffmpegLoaded = true;
       return ffmpeg;
     } catch (err) {
       console.error(err);
-      showToast('Échec du chargement de FFmpeg. Vérifiez votre connexion.', 'error');
+      const hint = err.message && err.message.includes('Timeout')
+        ? 'Le chargement a pris trop de temps. Rechargez la page et réessayez.'
+        : 'Échec du chargement de FFmpeg. Rechargez la page.';
+      showToast(hint, 'error');
       throw err;
     } finally {
       overlay.remove();
